@@ -1,4 +1,0 @@
-# melos_managed_dependency_overrides: saasfork_core
-dependency_overrides:
-  saasfork_core:
-    path: ../saasfork_core
