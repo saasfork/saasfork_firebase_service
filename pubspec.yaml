@@ -16,7 +16,9 @@ dependencies:
   flutter_riverpod: ^2.6.1
 
   saasfork_core:
-    path: ../saasfork_core
+    git:
+      url: https://github.com/saasfork/saasfork_core.git
+      ref: main
 
 dev_dependencies:
   flutter_test:
