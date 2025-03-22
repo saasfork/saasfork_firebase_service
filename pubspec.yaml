@@ -17,7 +17,7 @@ dependencies:
   cloud_functions: ^5.3.4
   flutter_riverpod: ^2.6.1
 
-  saasfork_core: ^0.0.2
+  saasfork_core: ^0.0.3
 
 dev_dependencies:
   flutter_test:
