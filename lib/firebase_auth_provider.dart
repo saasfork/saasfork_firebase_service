@@ -23,7 +23,17 @@ class AuthNotifier extends Notifier<AuthStateModel> {
   bool get isAuthenticated => state.state == AuthState.authenticated;
 
   Future<void> initialize() async {
-    _initializeCompleter ??= Completer<void>();
+    if (_initializeCompleter != null) {
+      if (_initializeCompleter!.isCompleted) {
+        if (state.state != AuthState.idle) {
+          return Future.value();
+        }
+      } else {
+        return _initializeCompleter!.future;
+      }
+    }
+
+    _initializeCompleter = Completer<void>();
 
     if (state.state != AuthState.idle) {
       _initializeCompleter!.complete();
