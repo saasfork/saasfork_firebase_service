@@ -183,7 +183,7 @@ class AuthNotifier extends Notifier<AuthStateModel> {
     try {
       await _auth.signOut();
       state = AuthStateModel(
-        state: AuthState.idle,
+        state: AuthState.unauthenticated,
         user: null,
         errorMessage: null,
       );
@@ -255,7 +255,10 @@ class AuthNotifier extends Notifier<AuthStateModel> {
 
       await currentFirebaseUser.delete();
 
-      return AuthStateModel(state: AuthState.idle, errorMessage: null);
+      return AuthStateModel(
+        state: AuthState.unauthenticated,
+        errorMessage: null,
+      );
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
         state = state.copyWith(
