@@ -1,7 +1,11 @@
-## 0.0.1
+## 0.0.3
 
-* Initial version
+* Refactoring of the authentication system
 
 ## 0.0.2
 
-* Automatisation CI
+* CI Automation
+
+## 0.0.1
+
+* Initial version
