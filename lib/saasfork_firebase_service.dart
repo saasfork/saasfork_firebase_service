@@ -1,2 +1,3 @@
 export 'firebase_bootstrap.dart';
-export 'firebase_auth_provider.dart';
+export 'models/auth_state_model.dart';
+export 'auth_provider.dart';

@@ -67,6 +67,12 @@ class AuthStateModel {
   factory AuthStateModel.fromJson(String source) =>
       AuthStateModel.fromMap(json.decode(source) as Map<String, dynamic>);
 
+  factory AuthStateModel.empty() => AuthStateModel(
+        state: AuthState.unauthenticated,
+        user: null,
+        errorMessage: null,
+      );
+
   @override
   String toString() =>
       'AuthResultModel(state: $state, user: $user, error: $errorMessage)';
