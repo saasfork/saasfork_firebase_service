@@ -29,7 +29,7 @@ class FirebaseAuthService implements AuthServiceInterface {
                 claims: claims,
               );
             } catch (e) {
-              print('Error in authStateChanges: ${e.toString()}');
+              error('Error in authStateChanges: ${e.toString()}');
               yield null;
             }
           }
@@ -92,7 +92,7 @@ class FirebaseAuthService implements AuthServiceInterface {
           'role': Roles.user.toString(),
         });
       } catch (e) {
-        print('Warning: Unable to set default claims: ${e.toString()}');
+        error('Warning: Unable to set default claims: ${e.toString()}');
       }
 
       final claims = await getUserClaims();
