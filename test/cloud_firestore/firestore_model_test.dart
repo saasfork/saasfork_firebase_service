@@ -74,6 +74,7 @@ void main() {
   late MockDocumentSnapshot mockDocumentSnapshot;
   late MockQuery mockQuery;
   late MockQuerySnapshot mockQuerySnapshot;
+  late MockQueryDocumentSnapshot mockQueryDocumentSnapshot;
 
   setUp(() {
     // Configuration des mocks
@@ -83,11 +84,15 @@ void main() {
     mockDocumentSnapshot = MockDocumentSnapshot();
     mockQuery = MockQuery();
     mockQuerySnapshot = MockQuerySnapshot();
+    mockQueryDocumentSnapshot = MockQueryDocumentSnapshot();
 
     // Configuration des comportements par défaut
     when(
       mockFirestore.collection('test_collection'),
     ).thenReturn(mockCollectionReference);
+
+    // Configuration du comportement pour data() sur MockQueryDocumentSnapshot
+    when(mockQueryDocumentSnapshot.data()).thenReturn({});
   });
 
   group('FirestoreModel', () {
@@ -253,20 +258,21 @@ void main() {
         final mockQueryDocSnap2 = MockQueryDocumentSnapshot();
         final docs = [mockQueryDocSnap1, mockQueryDocSnap2];
 
+        // Ajout des stubs pour la méthode data()
+        when(
+          mockQueryDocSnap1.data(),
+        ).thenReturn({'name': 'Name 1', 'age': 20});
+        when(
+          mockQueryDocSnap2.data(),
+        ).thenReturn({'name': 'Name 2', 'age': 30});
+
         when(
           mockCollectionReference.get(),
         ).thenAnswer((_) async => mockQuerySnapshot);
         when(mockQuerySnapshot.docs).thenReturn(docs);
 
         when(mockQueryDocSnap1.id).thenReturn('doc1');
-        when(
-          mockQueryDocSnap1.data(),
-        ).thenReturn({'name': 'Name 1', 'age': 20});
-
         when(mockQueryDocSnap2.id).thenReturn('doc2');
-        when(
-          mockQueryDocSnap2.data(),
-        ).thenReturn({'name': 'Name 2', 'age': 30});
 
         // Act
         final results = await model.findAll();
@@ -289,6 +295,11 @@ void main() {
         final mockQueryDocSnap = MockQueryDocumentSnapshot();
         final docs = [mockQueryDocSnap];
 
+        // Ajout du stub pour la méthode data()
+        when(
+          mockQueryDocSnap.data(),
+        ).thenReturn({'name': 'Specific Name', 'age': 40});
+
         when(
           mockCollectionReference.where('name', isEqualTo: 'Specific Name'),
         ).thenReturn(mockQuery);
@@ -296,9 +307,6 @@ void main() {
         when(mockQuerySnapshot.docs).thenReturn(docs);
 
         when(mockQueryDocSnap.id).thenReturn('filtered_doc');
-        when(
-          mockQueryDocSnap.data(),
-        ).thenReturn({'name': 'Specific Name', 'age': 40});
 
         // Act
         final results = await model.findWhere(
@@ -318,6 +326,10 @@ void main() {
         final model = TestModel(firestore: mockFirestore);
         final mockQueryDocSnap = MockQueryDocumentSnapshot();
         final docs = [mockQueryDocSnap];
+
+        // Ajout des stubs pour la méthode data() et la propriété id
+        when(mockQueryDocSnap.data()).thenReturn({'age': 30});
+        when(mockQueryDocSnap.id).thenReturn('doc_with_age_30');
 
         when(
           mockCollectionReference.where('age', isEqualTo: 30),
@@ -340,6 +352,10 @@ void main() {
         final model = TestModel(firestore: mockFirestore);
         final mockQueryDocSnap = MockQueryDocumentSnapshot();
         final docs = [mockQueryDocSnap];
+
+        // Ajout des stubs pour la méthode data() et la propriété id
+        when(mockQueryDocSnap.data()).thenReturn({'name': 'Existing Name'});
+        when(mockQueryDocSnap.id).thenReturn('existing_doc_id');
 
         when(
           mockCollectionReference.where('name', isEqualTo: 'Existing Name'),
