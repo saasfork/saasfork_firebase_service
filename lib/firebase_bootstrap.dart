@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
+import 'package:saasfork_core/utils/config.dart';
 
 /// Firebase Authentication service for SaasFork.
 ///
@@ -92,5 +94,64 @@ class SFFirebaseBootstrap {
       FirebaseFunctions.instance.useFunctionsEmulator('localhost', 5001);
       FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
     }
+  }
+
+  /// Initializes Firebase using configuration from SFConfig.
+  ///
+  /// This method retrieves Firebase configuration variables from SFConfig
+  /// and initializes Firebase accordingly.
+  ///
+  /// Parameters:
+  /// - [isDev]: If `true`, Firebase Auth will use the local emulator
+  ///   on localhost:9099. Defaults to `false`. If `null`, the mode will
+  ///   be determined automatically based on SFConfig and kDebugMode.
+  ///
+  /// Throws:
+  /// - Exception if any required Firebase configuration variable is missing.
+  static Future<void> initializeFromConfig({bool? isDev}) async {
+    final apiKey = SFConfig.get<String>('FIREBASE_API_KEY');
+    final authDomain = SFConfig.get<String>('FIREBASE_AUTH_DOMAIN');
+    final projectId = SFConfig.get<String>('FIREBASE_PROJECT_ID');
+    final storageBucket = SFConfig.get<String>('FIREBASE_STORAGE_BUCKET');
+    final messagingSenderId = SFConfig.get<String>(
+      'FIREBASE_MESSAGING_SENDER_ID',
+    );
+    final appId = SFConfig.get<String>('FIREBASE_APP_ID');
+
+    // Verify that all required variables are present
+    final requiredFields = {
+      'FIREBASE_API_KEY': apiKey,
+      'FIREBASE_AUTH_DOMAIN': authDomain,
+      'FIREBASE_PROJECT_ID': projectId,
+      'FIREBASE_STORAGE_BUCKET': storageBucket,
+      'FIREBASE_MESSAGING_SENDER_ID': messagingSenderId,
+      'FIREBASE_APP_ID': appId,
+    };
+
+    final missingFields =
+        requiredFields.entries
+            .where((entry) => entry.value == null)
+            .map((entry) => entry.key)
+            .toList();
+
+    if (missingFields.isNotEmpty) {
+      throw Exception(
+        'Missing Firebase configuration variables: ${missingFields.join(', ')}',
+      );
+    }
+
+    // Automatically determine if we are in development mode
+    final useDevMode = isDev ?? (SFConfig.isDevelopment || kDebugMode);
+
+    // Use the existing initialization method
+    await initialize(
+      apiKey: apiKey!,
+      authDomain: authDomain!,
+      projectId: projectId!,
+      storageBucket: storageBucket!,
+      messagingSenderId: messagingSenderId!,
+      appId: appId!,
+      isDev: useDevMode,
+    );
   }
 }
