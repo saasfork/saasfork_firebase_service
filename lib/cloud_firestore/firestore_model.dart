@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:saasfork_core/saasfork_core.dart';
 
 /// Modèle générique pour les entités stockées dans Firestore
 /// T représente le type concret de l'entité
@@ -44,9 +45,9 @@ abstract class FirestoreModel<T extends FirestoreModel<T>> {
     }
 
     // Important: Ajouter des logs pour le débogage
-    print('Saving to collection: $collectionName');
-    print('Excluded fields: $excludeFromSave');
-    print('Filtered data to save: $map');
+    log('Saving to collection: $collectionName');
+    log('Excluded fields: $excludeFromSave');
+    log('Filtered data to save: $map');
 
     return map;
   }
@@ -77,10 +78,10 @@ abstract class FirestoreModel<T extends FirestoreModel<T>> {
     if (id == null) {
       final docRef = await collection.add(filteredMap);
       id = docRef.id;
-      print('Saved new document with ID: $id');
+      log('Saved new document with ID: $id');
     } else {
       await collection.doc(id).set(filteredMap);
-      print('Updated document with ID: $id');
+      log('Updated document with ID: $id');
     }
   }
 
@@ -120,20 +121,20 @@ abstract class FirestoreModel<T extends FirestoreModel<T>> {
     }
 
     // Logs pour le débogage
-    print('Saving to collection: $collectionName with additional exclusions');
-    print('Default excluded fields: $excludeFromSave');
-    print('Additional excluded fields: $additionalExcludeFields');
-    print('Filtered data to save: $map');
+    log('Saving to collection: $collectionName with additional exclusions');
+    log('Default excluded fields: $excludeFromSave');
+    log('Additional excluded fields: $additionalExcludeFields');
+    log('Filtered data to save: $map');
 
     final collection = firestore.collection(collectionName);
 
     if (id == null) {
       final docRef = await collection.add(map);
       id = docRef.id;
-      print('Saved new document with ID: $id');
+      log('Saved new document with ID: $id');
     } else {
       await collection.doc(id).set(map);
-      print('Updated document with ID: $id');
+      log('Updated document with ID: $id');
     }
   }
 
