@@ -3,7 +3,12 @@ import 'package:cross_file/cross_file.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as path;
+
+final storageServiceProvider = Provider<SFStorageService>((ref) {
+  return SFStorageService();
+});
 
 /// Service pour gérer les uploads de fichiers vers Firebase Storage.
 class SFStorageService {
