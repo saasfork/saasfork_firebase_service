@@ -417,4 +417,63 @@ void main() {
       verify(mockAuthService.deleteAccount()).called(1);
     });
   });
+
+  group('Provider dependencies', () {
+    test('currentUserProvider returns current user from authProvider', () {
+      final userModel = UserModel(
+        uid: 'test-uid',
+        email: 'test@example.com',
+        username: 'testuser',
+        claims: UserClaims(role: Roles.user),
+      );
+
+      // Set authenticated state with user
+      container.read(authProvider.notifier).state = AuthStateModel(
+        state: AuthState.authenticated,
+        user: userModel,
+      );
+
+      // Check user provider returns the correct user
+      expect(container.read(currentUserProvider), equals(userModel));
+
+      // Set unauthenticated state
+      container.read(authProvider.notifier).state = AuthStateModel(
+        state: AuthState.unauthenticated,
+        user: null,
+      );
+
+      // Check user provider returns null when unauthenticated
+      expect(container.read(currentUserProvider), isNull);
+    });
+
+    test(
+      'currentUserIdProvider returns user ID or null based on authentication state',
+      () {
+        final userModel = UserModel(
+          uid: 'test-uid',
+          email: 'test@example.com',
+          username: 'testuser',
+          claims: UserClaims(role: Roles.user),
+        );
+
+        // Set authenticated state with user
+        container.read(authProvider.notifier).state = AuthStateModel(
+          state: AuthState.authenticated,
+          user: userModel,
+        );
+
+        // Check user ID provider returns the correct ID
+        expect(container.read(currentUserIdProvider), equals('test-uid'));
+
+        // Set unauthenticated state
+        container.read(authProvider.notifier).state = AuthStateModel(
+          state: AuthState.unauthenticated,
+          user: null,
+        );
+
+        // Check user ID provider returns null when unauthenticated
+        expect(container.read(currentUserIdProvider), isNull);
+      },
+    );
+  });
 }

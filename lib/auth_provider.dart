@@ -12,6 +12,18 @@ final authProvider = NotifierProvider<AuthNotifier, AuthStateModel>(() {
   return AuthNotifier(auth: auth);
 });
 
+/// Retourne l'utilisateur authentifié (ou null)
+final currentUserProvider = Provider<UserModel?>((ref) {
+  final authState = ref.watch(authProvider);
+  return authState.user;
+});
+
+/// Provider qui expose l'ID de l'utilisateur authentifié (ou null)
+final currentUserIdProvider = Provider<String?>((ref) {
+  final user = ref.watch(currentUserProvider);
+  return user?.uid;
+});
+
 class AuthNotifier extends Notifier<AuthStateModel> {
   late final AuthServiceInterface _auth;
   Completer<void>? _initializeCompleter;
