@@ -6,8 +6,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as path;
 
+// Créer un provider pour FirebaseStorage
+final firebaseStorageProvider = Provider<FirebaseStorage>((ref) {
+  return FirebaseStorage.instance;
+});
+
+// Mettre à jour le provider du service pour utiliser le provider de FirebaseStorage
 final storageServiceProvider = Provider<SFStorageService>((ref) {
-  return SFStorageService();
+  final storage = ref.watch(firebaseStorageProvider);
+  return SFStorageService(storage: storage);
 });
 
 /// Service pour gérer les uploads de fichiers vers Firebase Storage.
