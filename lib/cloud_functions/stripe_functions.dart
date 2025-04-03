@@ -27,7 +27,7 @@ class StripeFunctions {
       'unit_amount',
       'currency',
       'period',
-      'paymentId',
+      'payment_id',
     ];
     for (final field in requiredFields) {
       if (!productDetails.containsKey(field) || productDetails[field] == null) {
@@ -39,6 +39,13 @@ class StripeFunctions {
       throw StripeException('unit_amount must be a positive number');
     }
 
+    if (productDetails.containsKey('trial_period_days')) {
+      final trialPeriodDays = productDetails['trial_period_days'];
+      if (trialPeriodDays <= 0) {
+        throw StripeException('trial_period_days must be a positive number');
+      }
+    }
+
     try {
       final callable = FirebaseFunctions.instance.httpsCallable(
         'createStripePaymentLink',
@@ -46,7 +53,7 @@ class StripeFunctions {
 
       final response = await callable({
         ...productDetails,
-        'fromUrl': getLocalhostUrl(),
+        'from_url': getLocalhostUrl(),
       });
 
       // Vérifier si la réponse contient un lien de paiement
