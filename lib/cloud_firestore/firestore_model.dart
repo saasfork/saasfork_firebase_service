@@ -265,6 +265,58 @@ abstract class FirestoreModel<T extends FirestoreModel<T>> {
 
     return snapshot.docs.isNotEmpty;
   }
+
+  /// Écouter les modifications d'un document
+  ///
+  /// Retourne un Stream qui émet une nouvelle instance du modèle
+  /// à chaque fois que le document est modifié dans Firestore.
+  ///
+  /// Exemple:
+  /// ```dart
+  /// // Créer une instance du modèle PaymentModel
+  /// final paymentModel = PaymentModel();
+  ///
+  /// // Écouter les modifications d'un paiement spécifique
+  /// final paymentStream = paymentModel.listenDocument('payment123');
+  ///
+  /// // S'abonner au stream pour recevoir les mises à jour
+  /// final subscription = paymentStream.listen((updatedPayment) {
+  ///   if (updatedPayment != null) {
+  ///     print('Statut de paiement mis à jour: ${updatedPayment.status}');
+  ///
+  ///     // Vérifier si le paiement est complètement traité
+  ///     if (updatedPayment.checkoutComplete &&
+  ///         updatedPayment.subscriptionCreated &&
+  ///         updatedPayment.paymentConfirmed) {
+  ///       print('Le paiement est entièrement terminé !');
+  ///
+  ///       // Déclencher une action spécifique
+  ///       _unlockPremiumFeatures(updatedPayment.userId);
+  ///     }
+  ///   } else {
+  ///     print('Le document a été supprimé');
+  ///   }
+  /// });
+  ///
+  /// // N'oubliez pas d'annuler l'abonnement lorsque vous n'en avez plus besoin
+  /// @override
+  /// void dispose() {
+  ///   subscription.cancel();
+  ///   super.dispose();
+  /// }
+  /// ```
+  Stream<T?> listenDocument(String documentId) {
+    return firestore.collection(collectionName).doc(documentId).snapshots().map(
+      (snapshot) {
+        if (snapshot.exists && snapshot.data() != null) {
+          return fromDocumentSnapshot(snapshot);
+        } else {
+          // Retourne null si le document n'existe pas ou a été supprimé
+          return null;
+        }
+      },
+    );
+  }
 }
 
 /// Factory pour la création d'instances de FirestoreModel avec une instance Firestore spécifique
