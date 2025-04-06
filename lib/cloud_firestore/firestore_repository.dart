@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:saasfork_core/saasfork_core.dart';
 
 /// Interface abstraite pour encapsuler les types Firestore
 abstract class FirestoreDocument {
@@ -43,6 +44,19 @@ class EntityRelation<T> {
     required this.fromDocument,
     this.autoLoad = false,
   });
+}
+
+/// Classe spéciale pour les relations de référence
+class _ReferenceRelation<T> extends EntityRelation<T> {
+  /// Champ dans l'entité locale qui contient l'ID de l'entité référencée
+  final String localKeyField;
+
+  _ReferenceRelation({
+    required super.targetCollection,
+    required this.localKeyField,
+    required super.fromDocument,
+    super.autoLoad,
+  }) : super(foreignKey: '_invalid_');
 }
 
 /// Définition d'une relation par tableau d'IDs
@@ -126,6 +140,23 @@ abstract class FirestoreRepository<T> {
     );
   }
 
+  /// Ajouter une relation de référence (où cette entité stocke l'ID d'une autre)
+  void addReferenceRelation<R>(
+    String relationName,
+    String targetCollection,
+    String localKeyField,
+    R Function(FirestoreDocument document) fromDocument, {
+    bool autoLoad = false,
+  }) {
+    // Utiliser une structure spéciale pour identifier ce type de relation
+    _relations[relationName] = _ReferenceRelation<R>(
+      targetCollection: targetCollection,
+      localKeyField: localKeyField,
+      fromDocument: fromDocument,
+      autoLoad: autoLoad,
+    );
+  }
+
   /// Référence à la collection
   CollectionReference<Map<String, dynamic>> get collection =>
       firestore.collection(collectionName);
@@ -164,7 +195,7 @@ abstract class FirestoreRepository<T> {
       }
       return null;
     } catch (e) {
-      print('Error in findById: $e');
+      error('Error in findById: $e');
       return null;
     }
   }
@@ -184,7 +215,7 @@ abstract class FirestoreRepository<T> {
 
       return entities;
     } catch (e) {
-      print('Error in findAll: $e');
+      error('Error in findAll: $e');
       return [];
     }
   }
@@ -197,22 +228,36 @@ abstract class FirestoreRepository<T> {
     // Clone de l'entité pour modification
     var updatedEntity = entity;
 
-    // Relations standard (foreignKey)
+    // Relations standard et références
     for (final entry in _relations.entries) {
       final relationName = entry.key;
       final relation = entry.value;
 
-      if (relation.autoLoad || true) {
-        final relatedEntities = await _findRelatedEntities(id, relation);
-        updatedEntity = await updateEntityWithRelation(
-          updatedEntity,
-          relationName,
-          relatedEntities,
-        );
+      if (relation.autoLoad) {
+        if (relation is _ReferenceRelation) {
+          // Charger une relation de référence
+          final relatedEntities = await _findReferencedEntities(
+            entity,
+            relation,
+          );
+          updatedEntity = await updateEntityWithRelation(
+            updatedEntity,
+            relationName,
+            relatedEntities,
+          );
+        } else {
+          // Relations traditionnelles (many-to-one)
+          final relatedEntities = await _findRelatedEntities(id, relation);
+          updatedEntity = await updateEntityWithRelation(
+            updatedEntity,
+            relationName,
+            relatedEntities,
+          );
+        }
       }
     }
 
-    // Relations par tableau d'IDs
+    // Relations par tableau d'IDs (code existant inchangé)
     for (final entry in _arrayRelations.entries) {
       final relationName = entry.key;
       final relation = entry.value;
@@ -255,6 +300,46 @@ abstract class FirestoreRepository<T> {
     return querySnapshot.docs
         .map((doc) => relation.fromDocument(_documentFromSnapshot(doc)))
         .toList();
+  }
+
+  /// Trouver les entités référencées par une entité
+  Future<List<dynamic>> _findReferencedEntities<R>(
+    T entity,
+    _ReferenceRelation<R> relation,
+  ) async {
+    try {
+      // Extraire l'ID référencé depuis l'entité
+      final entityMap = toMap(entity);
+      final referencedId = entityMap[relation.localKeyField];
+
+      if (referencedId == null || referencedId.toString().isEmpty) {
+        warn('Warning: No valid ID found in field ${relation.localKeyField}');
+        return [];
+      }
+
+      // Récupérer directement l'entité référencée
+      final docSnapshot =
+          await firestore
+              .collection(relation.targetCollection)
+              .doc(referencedId.toString())
+              .get();
+
+      if (!docSnapshot.exists || docSnapshot.data() == null) {
+        warn(
+          'Warning: Referenced document $referencedId not found in ${relation.targetCollection}',
+        );
+        return [];
+      }
+
+      // Créer l'entité référencée
+      final referencedEntity = relation.fromDocument(
+        _documentFromSnapshot(docSnapshot),
+      );
+      return [referencedEntity];
+    } catch (e) {
+      error('Error in _findReferencedEntities: $e');
+      return [];
+    }
   }
 
   /// Nouvelle méthode pour trouver les entités liées par tableau d'IDs
@@ -314,7 +399,7 @@ abstract class FirestoreRepository<T> {
 
       return allResults;
     } catch (e) {
-      print('Error in _findArrayRelatedEntities: $e');
+      error('Error in _findArrayRelatedEntities: $e');
       return [];
     }
   }
@@ -347,7 +432,7 @@ abstract class FirestoreRepository<T> {
         return entity;
       }
     } catch (e) {
-      print('Error in save: $e');
+      error('Error in save: $e');
       rethrow;
     }
   }
@@ -373,7 +458,7 @@ abstract class FirestoreRepository<T> {
 
         // Vérifier si la relation est définie
         if (!_relations.containsKey(relationName)) {
-          print("Warning: Relation '$relationName' is not defined");
+          warn("Warning: Relation '$relationName' is not defined");
           continue;
         }
 
@@ -412,7 +497,7 @@ abstract class FirestoreRepository<T> {
       // Recharger l'entité avec ses relations
       return await findById(entityId, loadRelations: true) ?? savedEntity;
     } catch (e) {
-      print('Error in saveWithRelations: $e');
+      error('Error in saveWithRelations: $e');
       rethrow;
     }
   }
@@ -446,7 +531,7 @@ abstract class FirestoreRepository<T> {
       await collection.doc(id).delete();
       return true;
     } catch (e) {
-      print('Error in delete: $e');
+      error('Error in delete: $e');
       return false;
     }
   }
@@ -457,7 +542,7 @@ abstract class FirestoreRepository<T> {
       await collection.doc(id).delete();
       return true;
     } catch (e) {
-      print('Error in deleteById: $e');
+      error('Error in deleteById: $e');
       return false;
     }
   }
@@ -504,7 +589,7 @@ abstract class FirestoreRepository<T> {
           .map((doc) => fromDocument(_documentFromSnapshot(doc)))
           .toList();
     } catch (e) {
-      print('Error in query: $e');
+      error('Error in query: $e');
       return [];
     }
   }
@@ -516,7 +601,7 @@ abstract class FirestoreRepository<T> {
           await collection.where(field, isEqualTo: value).limit(1).get();
       return querySnapshot.docs.isNotEmpty;
     } catch (e) {
-      print('Error in exists: $e');
+      error('Error in exists: $e');
       return false;
     }
   }
@@ -574,7 +659,7 @@ abstract class FirestoreRepository<T> {
           .map((doc) => fromDocument(_documentFromSnapshot(doc)))
           .toList();
     } catch (e) {
-      print('Error in findWhere: $e');
+      error('Error in findWhere: $e');
       return [];
     }
   }
