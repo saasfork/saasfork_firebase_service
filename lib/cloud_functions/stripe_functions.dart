@@ -12,11 +12,42 @@ class StripeException implements Exception {
       'StripeException: $message${details != null ? '\nDetails: $details' : ''}';
 }
 
-// TODO: Rendre plus testable cette classe
+/// Interface pour les fonctions Firebase
+abstract class FirebaseFunctionsService {
+  Future<HttpsCallableResult> callFunction(
+    String functionName,
+    Map<String, dynamic> parameters,
+  );
+}
+
+/// Implémentation concrète utilisant Firebase Functions
+class DefaultFirebaseFunctionsService implements FirebaseFunctionsService {
+  @override
+  Future<HttpsCallableResult> callFunction(
+    String functionName,
+    Map<String, dynamic> parameters,
+  ) async {
+    final callable = FirebaseFunctions.instance.httpsCallable(functionName);
+    return await callable(parameters);
+  }
+}
+
 class StripeFunctions {
+  final FirebaseFunctionsService _functionsService;
+
+  /// Constructeur avec paramètre optionnel pour l'injection de dépendance
+  StripeFunctions([FirebaseFunctionsService? functionsService])
+    : _functionsService = functionsService ?? DefaultFirebaseFunctionsService();
+
+  /// Méthode statique pour garder la compatibilité avec le code existant
   static Future<String> createStripePaymentLink(
     Map<String, dynamic> productDetails,
   ) async {
+    return await StripeFunctions().createPaymentLink(productDetails);
+  }
+
+  /// Méthode d'instance qui peut être testée
+  Future<String> createPaymentLink(Map<String, dynamic> productDetails) async {
     // Vérifier si productDetails contient les informations nécessaires
     if (productDetails.isEmpty) {
       throw StripeException('Product details cannot be empty');
@@ -48,14 +79,10 @@ class StripeFunctions {
     }
 
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable(
+      final response = await _functionsService.callFunction(
         'createStripePaymentLink',
+        {...productDetails, 'from_url': getLocalhostUrl()},
       );
-
-      final response = await callable({
-        ...productDetails,
-        'from_url': getLocalhostUrl(),
-      });
 
       // Vérifier si la réponse contient un lien de paiement
       if (response.data == null ||
@@ -75,6 +102,47 @@ class StripeFunctions {
       });
     } catch (e) {
       throw StripeException('Failed to create payment link', e);
+    }
+  }
+
+  /// Méthode statique pour garder la compatibilité avec le code existant
+  static Future<String> createStripePortalLink({
+    required String customerId,
+  }) async {
+    return await StripeFunctions().createPortalLink(customerId: customerId);
+  }
+
+  /// Méthode d'instance qui peut être testée
+  Future<String> createPortalLink({required String customerId}) async {
+    // Vérifier que l'ID client n'est pas vide
+    if (customerId.isEmpty) {
+      throw StripeException('customer_id cannot be empty');
+    }
+
+    try {
+      final response = await _functionsService.callFunction(
+        'createStripePortalSession',
+        {'customer_id': customerId, 'from_url': getLocalhostUrl()},
+      );
+
+      // Vérifier si la réponse contient une URL
+      if (response.data == null ||
+          !response.data.containsKey('url') ||
+          response.data['url'] == null) {
+        throw StripeException(
+          'Invalid response from Stripe portal service',
+          response.data,
+        );
+      }
+
+      return response.data['url'];
+    } on FirebaseFunctionsException catch (e) {
+      throw StripeException('Firebase function error: ${e.message}', {
+        'code': e.code,
+        'details': e.details,
+      });
+    } catch (e) {
+      throw StripeException('Failed to create portal link', e);
     }
   }
 }
