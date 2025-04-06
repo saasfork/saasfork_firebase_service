@@ -12,6 +12,7 @@ class StripeException implements Exception {
       'StripeException: $message${details != null ? '\nDetails: $details' : ''}';
 }
 
+// TODO: Rendre plus testable cette classe
 class StripeFunctions {
   static Future<String> createStripePaymentLink(
     Map<String, dynamic> productDetails,
@@ -41,7 +42,7 @@ class StripeFunctions {
 
     if (productDetails.containsKey('trial_period_days')) {
       final trialPeriodDays = productDetails['trial_period_days'];
-      if (trialPeriodDays <= 0) {
+      if (trialPeriodDays != null && trialPeriodDays <= 0) {
         throw StripeException('trial_period_days must be a positive number');
       }
     }

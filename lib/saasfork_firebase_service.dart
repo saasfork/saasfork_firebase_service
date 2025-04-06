@@ -1,8 +1,9 @@
 export 'firebase_bootstrap.dart';
 export 'models/auth_state_model.dart';
 export 'auth_provider.dart';
+
 // firestore
-export 'cloud_firestore/firestore_model.dart';
+export 'cloud_firestore/firestore_repository.dart';
 
 // functions
 export 'cloud_functions/user_functions.dart';
