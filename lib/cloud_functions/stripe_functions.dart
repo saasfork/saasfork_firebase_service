@@ -41,13 +41,23 @@ class StripeFunctions {
 
   /// Méthode statique pour garder la compatibilité avec le code existant
   static Future<String> createStripePaymentLink(
-    Map<String, dynamic> productDetails,
-  ) async {
-    return await StripeFunctions().createPaymentLink(productDetails);
+    Map<String, dynamic> productDetails, {
+    String successCallbackUrl = 'confirmation',
+    String failureCallbackUrl = 'cancelled',
+  }) async {
+    return await StripeFunctions().createPaymentLink(
+      productDetails,
+      successCallbackUrl: successCallbackUrl,
+      failureCallbackUrl: failureCallbackUrl,
+    );
   }
 
   /// Méthode d'instance qui peut être testée
-  Future<String> createPaymentLink(Map<String, dynamic> productDetails) async {
+  Future<String> createPaymentLink(
+    Map<String, dynamic> productDetails, {
+    String successCallbackUrl = 'confirmation',
+    String failureCallbackUrl = 'cancelled',
+  }) async {
     // Vérifier si productDetails contient les informations nécessaires
     if (productDetails.isEmpty) {
       throw StripeException('Product details cannot be empty');
@@ -78,11 +88,30 @@ class StripeFunctions {
       }
     }
 
+    if (successCallbackUrl.startsWith('/')) {
+      successCallbackUrl = successCallbackUrl.substring(1);
+    }
+
+    if (failureCallbackUrl.startsWith('/')) {
+      failureCallbackUrl = failureCallbackUrl.substring(1);
+    }
+
+    if (successCallbackUrl.isEmpty) {
+      throw StripeException('successCallbackUrl cannot be empty');
+    }
+
+    if (failureCallbackUrl.isEmpty) {
+      throw StripeException('failureCallbackUrl cannot be empty');
+    }
+
     try {
-      final response = await _functionsService.callFunction(
-        'createStripePaymentLink',
-        {...productDetails, 'from_url': getLocalhostUrl()},
-      );
+      final response = await _functionsService
+          .callFunction('createStripePaymentLink', {
+            ...productDetails,
+            'from_url': getLocalhostUrl(),
+            'success_callback_url': successCallbackUrl,
+            'failure_callback_url': failureCallbackUrl,
+          });
 
       // Vérifier si la réponse contient un lien de paiement
       if (response.data == null ||
@@ -108,22 +137,32 @@ class StripeFunctions {
   /// Méthode statique pour garder la compatibilité avec le code existant
   static Future<String> createStripePortalLink({
     required String customerId,
+    String callbackUrl = 'settings',
   }) async {
-    return await StripeFunctions().createPortalLink(customerId: customerId);
+    return await StripeFunctions().createPortalLink(customerId: customerId, callbackUrl: callbackUrl);
   }
 
   /// Méthode d'instance qui peut être testée
-  Future<String> createPortalLink({required String customerId}) async {
+  Future<String> createPortalLink({
+    required String customerId,
+    String callbackUrl = 'settings',
+  }) async {
     // Vérifier que l'ID client n'est pas vide
     if (customerId.isEmpty) {
       throw StripeException('customer_id cannot be empty');
     }
 
+    if (callbackUrl.startsWith('/')) {
+      callbackUrl = callbackUrl.substring(1);
+    }
+
     try {
-      final response = await _functionsService.callFunction(
-        'createStripePortalSession',
-        {'customer_id': customerId, 'from_url': getLocalhostUrl()},
-      );
+      final response = await _functionsService
+          .callFunction('createStripePortalSession', {
+            'customer_id': customerId,
+            'from_url': getLocalhostUrl(),
+            'callback_url': callbackUrl,
+          });
 
       // Vérifier si la réponse contient une URL
       if (response.data == null ||

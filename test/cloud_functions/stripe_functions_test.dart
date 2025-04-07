@@ -170,6 +170,94 @@ void main() {
         ),
       );
     });
+
+    test('should remove leading slash from callback URLs', () async {
+      final expectedPaymentLink = 'https://example.com/pay/123';
+      final mockResult = MockHttpsCallableResult();
+      when(mockResult.data).thenReturn({'paymentLink': expectedPaymentLink});
+
+      when(
+        mockFunctionsService.callFunction('createStripePaymentLink', any),
+      ).thenAnswer((_) async => mockResult);
+
+      await stripeFunctions.createPaymentLink(
+        validProductDetails,
+        successCallbackUrl: '/success',
+        failureCallbackUrl: '/failure',
+      );
+
+      verify(
+        mockFunctionsService.callFunction(
+          'createStripePaymentLink',
+          argThat(
+            predicate<Map<String, dynamic>>((map) {
+              return map['success_callback_url'] == 'success' &&
+                  map['failure_callback_url'] == 'failure';
+            }),
+          ),
+        ),
+      ).called(1);
+    });
+
+    test('should throw exception when successCallbackUrl is empty', () async {
+      expect(
+        () => stripeFunctions.createPaymentLink(
+          validProductDetails,
+          successCallbackUrl: '',
+        ),
+        throwsA(
+          isA<StripeException>().having(
+            (e) => e.message,
+            'message',
+            'successCallbackUrl cannot be empty',
+          ),
+        ),
+      );
+    });
+
+    test('should throw exception when failureCallbackUrl is empty', () async {
+      expect(
+        () => stripeFunctions.createPaymentLink(
+          validProductDetails,
+          failureCallbackUrl: '',
+        ),
+        throwsA(
+          isA<StripeException>().having(
+            (e) => e.message,
+            'message',
+            'failureCallbackUrl cannot be empty',
+          ),
+        ),
+      );
+    });
+
+    test('should use custom callback URLs when provided', () async {
+      final expectedPaymentLink = 'https://example.com/pay/123';
+      final mockResult = MockHttpsCallableResult();
+      when(mockResult.data).thenReturn({'paymentLink': expectedPaymentLink});
+
+      when(
+        mockFunctionsService.callFunction('createStripePaymentLink', any),
+      ).thenAnswer((_) async => mockResult);
+
+      await stripeFunctions.createPaymentLink(
+        validProductDetails,
+        successCallbackUrl: 'custom-success',
+        failureCallbackUrl: 'custom-failure',
+      );
+
+      verify(
+        mockFunctionsService.callFunction(
+          'createStripePaymentLink',
+          argThat(
+            predicate<Map<String, dynamic>>((map) {
+              return map['success_callback_url'] == 'custom-success' &&
+                  map['failure_callback_url'] == 'custom-failure';
+            }),
+          ),
+        ),
+      ).called(1);
+    });
   });
 
   group('createPortalLink', () {
@@ -215,6 +303,32 @@ void main() {
       ).called(1);
     });
 
+    test('should remove leading slash from callback URL', () async {
+      final expectedUrl = 'https://billing.stripe.com/session/123';
+      final mockResult = MockHttpsCallableResult();
+      when(mockResult.data).thenReturn({'url': expectedUrl});
+
+      when(
+        mockFunctionsService.callFunction('createStripePortalSession', any),
+      ).thenAnswer((_) async => mockResult);
+
+      await stripeFunctions.createPortalLink(
+        customerId: 'cus_123',
+        callbackUrl: '/settings',
+      );
+
+      verify(
+        mockFunctionsService.callFunction(
+          'createStripePortalSession',
+          argThat(
+            predicate<Map<String, dynamic>>((map) {
+              return map['callback_url'] == 'settings';
+            }),
+          ),
+        ),
+      ).called(1);
+    });
+
     test('should throw exception when response is missing URL', () async {
       // Créer un mock avec une réponse invalide
       final mockResult = MockHttpsCallableResult();
@@ -238,6 +352,51 @@ void main() {
                 'details',
                 contains('Invalid response from Stripe portal service'),
               ),
+        ),
+      );
+    });
+
+    test('should throw exception when Firebase function call fails', () async {
+      when(
+        mockFunctionsService.callFunction('createStripePortalSession', any),
+      ).thenThrow(
+        FirebaseFunctionsException(
+          message: 'error',
+          code: 'code',
+          details: 'details',
+        ),
+      );
+
+      expect(
+        () => stripeFunctions.createPortalLink(customerId: 'cus_123'),
+        throwsA(
+          isA<StripeException>()
+              .having(
+                (e) => e.message,
+                'message',
+                'Firebase function error: error',
+              )
+              .having((e) => e.details, 'details', {
+                'code': 'code',
+                'details': 'details',
+              }),
+        ),
+      );
+    });
+
+    test('should throw exception when any other error occurs', () async {
+      when(
+        mockFunctionsService.callFunction('createStripePortalSession', any),
+      ).thenThrow(Exception('Unexpected error'));
+
+      expect(
+        () => stripeFunctions.createPortalLink(customerId: 'cus_123'),
+        throwsA(
+          isA<StripeException>().having(
+            (e) => e.message,
+            'message',
+            'Failed to create portal link',
+          ),
         ),
       );
     });
