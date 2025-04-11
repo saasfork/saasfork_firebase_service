@@ -1,3 +1,7 @@
+## 0.0.4
+
+* Added new repository system
+
 ## 0.0.3
 
 * Refactoring of the authentication system

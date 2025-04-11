@@ -1,6 +1,6 @@
 name: saasfork_firebase_service
 description: A Flutter UI kit for SaaSFork apps and projects
-version: 0.0.3
+version: 0.0.4
 homepage: https://github.com/saasfork/saasfork_firebase_service
 repository: https://github.com/saasfork/saasfork_firebase_service
 issue_tracker: https://github.com/saasfork/saasfork_firebase_service/issues
