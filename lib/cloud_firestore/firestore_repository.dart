@@ -563,6 +563,7 @@ abstract class FirestoreRepository<T> {
     String? orderBy,
     bool descending = false,
     int? limit,
+    bool loadRelations = false,
   }) async {
     try {
       Query<Map<String, dynamic>> query = collection;
@@ -585,9 +586,18 @@ abstract class FirestoreRepository<T> {
       }
 
       final querySnapshot = await query.get();
-      return querySnapshot.docs
-          .map((doc) => fromDocument(_documentFromSnapshot(doc)))
-          .toList();
+      final entities =
+          querySnapshot.docs
+              .map((doc) => fromDocument(_documentFromSnapshot(doc)))
+              .toList();
+
+      if (loadRelations) {
+        return await _loadEntitiesRelations(
+          entities,
+        ); // Charger les relations si demandé
+      }
+
+      return entities;
     } catch (e) {
       error('Error in query: $e');
       return [];
@@ -645,6 +655,7 @@ abstract class FirestoreRepository<T> {
     required String field,
     required dynamic isEqualTo,
     int? limit,
+    bool loadRelations = false,
   }) async {
     try {
       var query = collection.where(field, isEqualTo: isEqualTo);
@@ -654,10 +665,18 @@ abstract class FirestoreRepository<T> {
       }
 
       final querySnapshot = await query.get();
+      final entities =
+          querySnapshot.docs
+              .map((doc) => fromDocument(_documentFromSnapshot(doc)))
+              .toList();
 
-      return querySnapshot.docs
-          .map((doc) => fromDocument(_documentFromSnapshot(doc)))
-          .toList();
+      if (loadRelations) {
+        return await _loadEntitiesRelations(
+          entities,
+        ); // Charger les relations si demandé
+      }
+
+      return entities;
     } catch (e) {
       error('Error in findWhere: $e');
       return [];

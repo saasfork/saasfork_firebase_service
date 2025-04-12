@@ -352,5 +352,24 @@ void main() {
       verify(mockFirestore.batch()).called(1);
       verify(mockBatch.commit()).called(1);
     });
+
+    test('findWhere with parentId and no results', () async {
+      final mockQuerySnapshot = MockQuerySnapshot<Map<String, dynamic>>();
+
+      final mockQuery = MockQuery<Map<String, dynamic>>();
+      when(
+        mockCollection.where('parentId', isEqualTo: 999),
+      ).thenReturn(mockQuery); // Stub explicite pour where
+      when(mockQuery.get()).thenAnswer((_) async => mockQuerySnapshot);
+      when(mockQuerySnapshot.docs).thenReturn([]);
+
+      final results = await repository.findWhere(
+        field: 'parentId',
+        isEqualTo: 999,
+        loadRelations: true,
+      );
+
+      expect(results, isEmpty);
+    });
   });
 }
