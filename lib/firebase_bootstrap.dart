@@ -49,46 +49,15 @@ class SFFirebaseBootstrap {
   /// Examples:
   ///
   /// ```dart
-  /// // Production environment initialization
   /// await SFFirebaseAuth.initialize(
-  ///   apiKey: 'AIzaSyD_example_key',
-  ///   authDomain: 'my-app.firebaseapp.com',
-  ///   projectId: 'my-app',
-  ///   storageBucket: 'my-app.appspot.com',
-  ///   messagingSenderId: '1234567890',
-  ///   appId: '1:1234567890:web:abcdef1234567890',
-  /// );
-  ///
-  /// // Development environment with emulator
-  /// await SFFirebaseAuth.initialize(
-  ///   apiKey: 'demo-key',
-  ///   authDomain: 'localhost',
-  ///   projectId: 'demo-project',
-  ///   storageBucket: '',
-  ///   messagingSenderId: '',
-  ///   appId: '',
-  ///   isDev: true,
+  ///   options: DefaultFirebaseOptions.currentPlatform,
   /// );
   /// ```
   static Future<void> initialize({
-    required String apiKey,
-    required String authDomain,
-    required String projectId,
-    required String storageBucket,
-    required String messagingSenderId,
-    required String appId,
+    required FirebaseOptions options,
     bool isDev = false,
   }) async {
-    await Firebase.initializeApp(
-      options: FirebaseOptions(
-        apiKey: apiKey,
-        authDomain: authDomain,
-        projectId: projectId,
-        storageBucket: storageBucket,
-        messagingSenderId: messagingSenderId,
-        appId: appId,
-      ),
-    );
+    await Firebase.initializeApp(options: options);
 
     if (isDev) {
       await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
@@ -110,50 +79,11 @@ class SFFirebaseBootstrap {
   ///
   /// Throws:
   /// - Exception if any required Firebase configuration variable is missing.
-  static Future<void> initializeFromConfig({bool? isDev}) async {
-    final apiKey = SFConfig.get<String>('FIREBASE_API_KEY');
-    final authDomain = SFConfig.get<String>('FIREBASE_AUTH_DOMAIN');
-    final projectId = SFConfig.get<String>('FIREBASE_PROJECT_ID');
-    final storageBucket = SFConfig.get<String>('FIREBASE_STORAGE_BUCKET');
-    final messagingSenderId = SFConfig.get<String>(
-      'FIREBASE_MESSAGING_SENDER_ID',
-    );
-    final appId = SFConfig.get<String>('FIREBASE_APP_ID');
-
-    // Verify that all required variables are present
-    final requiredFields = {
-      'FIREBASE_API_KEY': apiKey,
-      'FIREBASE_AUTH_DOMAIN': authDomain,
-      'FIREBASE_PROJECT_ID': projectId,
-      'FIREBASE_STORAGE_BUCKET': storageBucket,
-      'FIREBASE_MESSAGING_SENDER_ID': messagingSenderId,
-      'FIREBASE_APP_ID': appId,
-    };
-
-    final missingFields =
-        requiredFields.entries
-            .where((entry) => entry.value == null)
-            .map((entry) => entry.key)
-            .toList();
-
-    if (missingFields.isNotEmpty) {
-      throw Exception(
-        'Missing Firebase configuration variables: ${missingFields.join(', ')}',
-      );
-    }
-
-    // Automatically determine if we are in development mode
+  static Future<void> initializeFromConfig({
+    required FirebaseOptions options,
+    bool? isDev,
+  }) async {
     final useDevMode = isDev ?? (SFConfig.isDevelopment || kDebugMode);
-
-    // Use the existing initialization method
-    await initialize(
-      apiKey: apiKey!,
-      authDomain: authDomain!,
-      projectId: projectId!,
-      storageBucket: storageBucket!,
-      messagingSenderId: messagingSenderId!,
-      appId: appId!,
-      isDev: useDevMode,
-    );
+    await initialize(options: options, isDev: useDevMode);
   }
 }
