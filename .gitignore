@@ -31,4 +31,3 @@ migrate_working_dir/
 build/
 
 pubspec_overrides.yaml
-*.mocks.dart
