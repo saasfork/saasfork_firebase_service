@@ -5,6 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as path;
+import 'package:saasfork_core/saasfork_core.dart';
 
 // Créer un provider pour FirebaseStorage
 final firebaseStorageProvider = Provider<FirebaseStorage>((ref) {
@@ -50,6 +51,7 @@ class SFStorageService {
         customFileName ??
         await _generateMd5FileName(file) + path.extension(file.name);
     final storagePath = _buildStoragePath(fileName, folder, userId);
+    log('Uploading file: $fileName to path: $storagePath');
     final fileMetadata = SettableMetadata(
       contentType: file.mimeType,
       customMetadata: metadata,
