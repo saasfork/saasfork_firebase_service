@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:saasfork_core/saasfork_core.dart';
 import 'package:saasfork_core/utils/config.dart';
 
 /// Firebase Authentication service for SaasFork.
@@ -60,6 +61,7 @@ class SFFirebaseBootstrap {
     await Firebase.initializeApp(options: options);
 
     if (isDev) {
+      log('Using Firebase emulators');
       await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
       FirebaseFunctions.instance.useFunctionsEmulator('localhost', 5001);
       FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);

@@ -141,10 +141,12 @@ class StripeFunctions {
   static Future<String> createStripePortalLink({
     required String customerId,
     String callbackUrl = 'settings',
+    String? fromUrl,
   }) async {
     return await StripeFunctions().createPortalLink(
       customerId: customerId,
       callbackUrl: callbackUrl,
+      fromUrl: fromUrl,
     );
   }
 
@@ -152,6 +154,7 @@ class StripeFunctions {
   Future<String> createPortalLink({
     required String customerId,
     String callbackUrl = 'settings',
+    String? fromUrl,
   }) async {
     // Vérifier que l'ID client n'est pas vide
     if (customerId.isEmpty) {
@@ -162,32 +165,38 @@ class StripeFunctions {
       callbackUrl = callbackUrl.substring(1);
     }
 
-    try {
-      final response = await _functionsService
-          .callFunction('createStripePortalSession', {
-            'customer_id': customerId,
-            'from_url': getLocalhostUrl(),
-            'callback_url': callbackUrl,
-          });
+    print({
+      'customer_id': customerId,
+      'from_url': fromUrl ?? getLocalhostUrl(),
+      'callback_url': callbackUrl,
+    });
 
-      // Vérifier si la réponse contient une URL
-      if (response.data == null ||
-          !response.data.containsKey('url') ||
-          response.data['url'] == null) {
-        throw StripeException(
-          'Invalid response from Stripe portal service',
-          response.data,
-        );
-      }
+    // try {
+    final response = await _functionsService
+        .callFunction('createStripePortalSession', {
+          'customer_id': customerId,
+          'from_url': fromUrl ?? getLocalhostUrl(),
+          'callback_url': callbackUrl,
+        });
 
-      return response.data['url'];
-    } on FirebaseFunctionsException catch (e) {
-      throw StripeException('Firebase function error: ${e.message}', {
-        'code': e.code,
-        'details': e.details,
-      });
-    } catch (e) {
-      throw StripeException('Failed to create portal link', e);
+    // Vérifier si la réponse contient une URL
+    if (response.data == null ||
+        !response.data.containsKey('url') ||
+        response.data['url'] == null) {
+      throw StripeException(
+        'Invalid response from Stripe portal service',
+        response.data,
+      );
     }
+
+    return response.data['url'];
+    // } on FirebaseFunctionsException catch (e) {
+    //   throw StripeException('Firebase function error: ${e.message}', {
+    //     'code': e.code,
+    //     'details': e.details,
+    //   });
+    // } catch (e) {
+    //   throw StripeException('Failed to create portal link', e);
+    // }
   }
 }
