@@ -44,11 +44,13 @@ class StripeFunctions {
     Map<String, dynamic> productDetails, {
     String successCallbackUrl = 'confirmation',
     String failureCallbackUrl = 'cancelled',
+    String? fromUrl,
   }) async {
     return await StripeFunctions().createPaymentLink(
       productDetails,
       successCallbackUrl: successCallbackUrl,
       failureCallbackUrl: failureCallbackUrl,
+      fromUrl: fromUrl,
     );
   }
 
@@ -57,6 +59,7 @@ class StripeFunctions {
     Map<String, dynamic> productDetails, {
     String successCallbackUrl = 'confirmation',
     String failureCallbackUrl = 'cancelled',
+    String? fromUrl,
   }) async {
     // Vérifier si productDetails contient les informations nécessaires
     if (productDetails.isEmpty) {
@@ -108,7 +111,7 @@ class StripeFunctions {
       final response = await _functionsService
           .callFunction('createStripePaymentLink', {
             ...productDetails,
-            'from_url': getLocalhostUrl(),
+            'from_url': fromUrl ?? getLocalhostUrl(),
             'success_callback_url': successCallbackUrl,
             'failure_callback_url': failureCallbackUrl,
           });
@@ -139,7 +142,10 @@ class StripeFunctions {
     required String customerId,
     String callbackUrl = 'settings',
   }) async {
-    return await StripeFunctions().createPortalLink(customerId: customerId, callbackUrl: callbackUrl);
+    return await StripeFunctions().createPortalLink(
+      customerId: customerId,
+      callbackUrl: callbackUrl,
+    );
   }
 
   /// Méthode d'instance qui peut être testée
