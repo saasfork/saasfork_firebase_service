@@ -165,38 +165,32 @@ class StripeFunctions {
       callbackUrl = callbackUrl.substring(1);
     }
 
-    print({
-      'customer_id': customerId,
-      'from_url': fromUrl ?? getLocalhostUrl(),
-      'callback_url': callbackUrl,
-    });
+    try {
+      final response = await _functionsService
+          .callFunction('createStripePortalSession', {
+            'customer_id': customerId,
+            'from_url': fromUrl ?? getLocalhostUrl(),
+            'callback_url': callbackUrl,
+          });
 
-    // try {
-    final response = await _functionsService
-        .callFunction('createStripePortalSession', {
-          'customer_id': customerId,
-          'from_url': fromUrl ?? getLocalhostUrl(),
-          'callback_url': callbackUrl,
-        });
+      // Vérifier si la réponse contient une URL
+      if (response.data == null ||
+          !response.data.containsKey('url') ||
+          response.data['url'] == null) {
+        throw StripeException(
+          'Failed to create portal link',
+          'Invalid response from Stripe portal service: ${response.data}',
+        );
+      }
 
-    // Vérifier si la réponse contient une URL
-    if (response.data == null ||
-        !response.data.containsKey('url') ||
-        response.data['url'] == null) {
-      throw StripeException(
-        'Invalid response from Stripe portal service',
-        response.data,
-      );
+      return response.data['url'];
+    } on FirebaseFunctionsException catch (e) {
+      throw StripeException('Firebase function error: ${e.message}', {
+        'code': e.code,
+        'details': e.details,
+      });
+    } catch (e) {
+      throw StripeException('Failed to create portal link', e);
     }
-
-    return response.data['url'];
-    // } on FirebaseFunctionsException catch (e) {
-    //   throw StripeException('Firebase function error: ${e.message}', {
-    //     'code': e.code,
-    //     'details': e.details,
-    //   });
-    // } catch (e) {
-    //   throw StripeException('Failed to create portal link', e);
-    // }
   }
 }
