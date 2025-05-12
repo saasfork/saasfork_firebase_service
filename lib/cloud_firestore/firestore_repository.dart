@@ -82,6 +82,33 @@ class ArrayRelation<T> {
   });
 }
 
+/// Enum représentant les opérateurs de comparaison pour les requêtes Firestore
+enum FirestoreOperator {
+  equalTo,
+  notEqualTo,
+  lessThan,
+  lessThanOrEqualTo,
+  greaterThan,
+  greaterThanOrEqualTo,
+  arrayContains,
+  arrayContainsAny,
+  whereIn,
+  whereNotIn,
+}
+
+/// Classe représentant une condition de requête pour Firestore
+class FirestoreQueryCondition {
+  final String field;
+  final FirestoreOperator operator;
+  final dynamic value;
+
+  FirestoreQueryCondition({
+    required this.field,
+    required this.operator,
+    required this.value,
+  });
+}
+
 /// Repository générique pour Firestore avec support de relations
 abstract class FirestoreRepository<T> {
   /// Instance Firestore
@@ -560,6 +587,7 @@ abstract class FirestoreRepository<T> {
   /// Requête avec filtres
   Future<List<T>> query({
     Map<String, dynamic>? equals,
+    List<FirestoreQueryCondition>? conditions,
     String? orderBy,
     bool descending = false,
     int? limit,
@@ -573,6 +601,13 @@ abstract class FirestoreRepository<T> {
         equals.forEach((field, value) {
           query = query.where(field, isEqualTo: value);
         });
+      }
+
+      // Appliquer les conditions avancées
+      if (conditions != null) {
+        for (final condition in conditions) {
+          query = _applyCondition(query, condition);
+        }
       }
 
       // Appliquer le tri
@@ -604,21 +639,45 @@ abstract class FirestoreRepository<T> {
     }
   }
 
-  /// Vérifier si une valeur existe
-  Future<bool> exists({required String field, required dynamic value}) async {
-    try {
-      final querySnapshot =
-          await collection.where(field, isEqualTo: value).limit(1).get();
-      return querySnapshot.docs.isNotEmpty;
-    } catch (e) {
-      error('Error in exists: $e');
-      return false;
+  /// Applique une condition à une requête
+  Query<Map<String, dynamic>> _applyCondition(
+    Query<Map<String, dynamic>> query,
+    FirestoreQueryCondition condition,
+  ) {
+    switch (condition.operator) {
+      case FirestoreOperator.equalTo:
+        return query.where(condition.field, isEqualTo: condition.value);
+      case FirestoreOperator.notEqualTo:
+        return query.where(condition.field, isNotEqualTo: condition.value);
+      case FirestoreOperator.lessThan:
+        return query.where(condition.field, isLessThan: condition.value);
+      case FirestoreOperator.lessThanOrEqualTo:
+        return query.where(
+          condition.field,
+          isLessThanOrEqualTo: condition.value,
+        );
+      case FirestoreOperator.greaterThan:
+        return query.where(condition.field, isGreaterThan: condition.value);
+      case FirestoreOperator.greaterThanOrEqualTo:
+        return query.where(
+          condition.field,
+          isGreaterThanOrEqualTo: condition.value,
+        );
+      case FirestoreOperator.arrayContains:
+        return query.where(condition.field, arrayContains: condition.value);
+      case FirestoreOperator.arrayContainsAny:
+        return query.where(condition.field, arrayContainsAny: condition.value);
+      case FirestoreOperator.whereIn:
+        return query.where(condition.field, whereIn: condition.value);
+      case FirestoreOperator.whereNotIn:
+        return query.where(condition.field, whereNotIn: condition.value);
     }
   }
 
   /// Écouter une requête
   Stream<List<T>> listenQuery({
     Map<String, dynamic>? equals,
+    List<FirestoreQueryCondition>? conditions,
     String? orderBy,
     bool descending = false,
     int? limit,
@@ -630,6 +689,13 @@ abstract class FirestoreRepository<T> {
       equals.forEach((field, value) {
         query = query.where(field, isEqualTo: value);
       });
+    }
+
+    // Appliquer les conditions avancées
+    if (conditions != null) {
+      for (final condition in conditions) {
+        query = _applyCondition(query, condition);
+      }
     }
 
     // Appliquer le tri
